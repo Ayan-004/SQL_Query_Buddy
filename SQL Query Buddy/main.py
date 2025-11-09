@@ -9,12 +9,10 @@ from typing import List, Tuple
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.utilities.sql_database import SQLDatabase
-from langchain_community.tools import QuerySQLDatabaseTool
+from langchain_community.tools.sql_database.tool import QuerySQLDatabaseTool
 from langchain_core.tools import create_retriever_tool
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain_classic.agents import AgentExecutor, create_openai_tools_agent
-# from langchain.agents import create_agent
+from langchain.agents import create_agent
 
 
 load_dotenv()
@@ -26,7 +24,7 @@ print("Initializig core components...")
 llm = ChatOpenAI(model='gpt-4o', temperature=0)
 embeddings = OpenAIEmbeddings()
 
-db = SQLDatabase.from_uri("sqlite:///retail.db")
+db = SQLDatabase.from_uri("sqlite:///Database/retail.db")
 
 try:
     vectorstore = FAISS.load_local(
@@ -95,23 +93,7 @@ You MUST follow this 4-step process for every user question:
 [cite_start]Remember: Maintain conversation history for follow-ups[cite: 37].
 """
 
-prompt = ChatPromptTemplate([
-    ("system", system_prompt),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad")
-])
-
-# llm_with_tools = llm.bind_tools(tools)
-
-agent = create_openai_tools_agent(llm, tools, prompt)
-
-agent_executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,
-    handle_parsing_errors=True
-)
+agent = create_agent(llm, tools, system_prompt=system_prompt)
 
 app = FastAPI(
     title="SQL Query Buddy API",
@@ -130,30 +112,78 @@ class ChatRequest(BaseModel):
     question: str
     chat_history: List[Tuple[str, str]]
     
+class EnhanceRequest(BaseModel):
+    prompt: str
+    
 class ChatResponse(BaseModel):
     answer: str
     chat_history: List[Tuple[str, str]]
+    
+@app.post("/enhance-prompt")
+async def enhance_prompt(request: EnhanceRequest):
+    print(f"Refining prompt: {request.prompt}")
+    
+    enhance_system_prompt = """
+    You are an expert AI Data Analyst assistant. Your specific task is to take a short, vague, or incomplete natural-language query from a user about a **retail database** and rewrite it into a clear, specific, and unambiguous question that a data analysis model can effectively answer.
+
+    **Core Enhancement Rules:**
+    1.**Infer Metrics:** If a metric is missing, add the most logical one. (e.g., "top customers" -> "top customers by **total sales revenue**").
+    2.**Add Grouping:** If a user asks for a broad metric, add a logical grouping. (e.g.,"product sales" -> "total sales **per product category**").
+    3.**Specify Timeframes:** If no timeframe is given, default to a common, relevant one.(e.g., "how are sales?" -> "What is the total sales revenue **for the last 30 days**?").
+    4.**Resolve Ambiguity:** Replace vague words like "best" or "popular" with specific metrics. (e.g., "best products" -> "top 10 products by **units sold**").
+
+    Return ONLY the single, enhanced query. Do not include any explanation, preamble, or markdown.
+
+    Example 1:
+    User: "top 5 customers"
+    Enhanced: "Show me the top 5 customers by total purchase amount for the last 90 days."
+
+    Example 2:
+    User: "products sales"
+    Enhanced: "What is the total sales revenue per product category for the current month?"
+
+    Example 3:
+    User: "how are we doing?"
+    Enhanced: "What is the total sales revenue and total number of orders for the last 30 days compared to the previous 30 days?"
+
+    Example 4:
+    User: "most popular items"
+    Enhanced: "List the top 10 products by total units sold in the last 30 days."
+    """
+    
+    try:
+        response = llm.invoke([
+            HumanMessage(content=enhance_system_prompt),
+            HumanMessage(content=request.prompt)
+        ])
+        
+        enhanced_prompt = response.content
+        return {"enhanced_prompt": enhanced_prompt}
+    except Exception as e:
+        print(f"Error enhancing prompt: {e}")
+        return {"enhanced_prompt": request.prompt}
     
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     print(f"Request received: {request.question}")
     
     history_messages = []
-    for human, ai in request.chat_history:
-        history_messages.extend([
-            HumanMessage(content=human),
-            AIMessage(content=ai)
-        ])
+    for item in request.chat_history:
+        if isinstance(item, list) and len(item) == 2:
+            human, ai = item
+            history_messages.append(HumanMessage(content=human))
+            history_messages.append(AIMessage(content=ai))
         
+    history_messages.append(HumanMessage(content=request.question))
+    
     try:
-        response = agent_executor.invoke({
-            "input": request.question,
-            "chat_history": history_messages
+        response = agent.invoke({
+            "messages": history_messages
         })
         
-        ai_answer = response["output"]
+        ai_answer = response["messages"][-1].content
         
-        updated_history = request.chat_history + [(request.question,  ai_answer)]
+        updated_history = request.chat_history + [[request.question,  ai_answer]]
         
         return ChatResponse(answer=ai_answer, chat_history=updated_history)
     
