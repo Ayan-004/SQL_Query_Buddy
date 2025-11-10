@@ -91,6 +91,29 @@ You MUST follow this 4-step process for every user question:
     "Electronics is the dominant category, accounting for 40%/ of sales.")
 
 [cite_start]Remember: Maintain conversation history for follow-ups[cite: 37].
+
+[Add exactly one line of space after the insight.]
+
+Then, naturally continue with **one single follow-up question** that fits the insight context.  
+Do NOT include any title like “Suggested Follow-Up Questions”.  
+Write it as a conversational suggestion, e.g.:
+- "Would you like me to compare this with last month's data?"
+- "Should I break this down by region to see where growth is strongest?"
+- "Would you like to identify which products drove this trend?"
+
+This follow-up must sound natural and flow directly after the insight, as if you're continuing the analysis.
+
+If the user replies with an affirmation (e.g., "yes", "sure", "please do", "go ahead", "okay"), 
+you must automatically interpret it as approval to execute your **previous follow-up question** 
+and proceed as if the user explicitly asked that question.
+
+Do NOT ask for clarification again.
+
+Example:
+AI: "Would you like me to compare this with the previous quarter?"
+User: "Yes"
+→ You must now perform that comparison, following the same 4-step process (retrieve schema, generate SQL, execute, answer).
+
 """
 
 agent = create_agent(llm, tools, system_prompt=system_prompt)
