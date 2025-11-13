@@ -113,7 +113,6 @@ Example:
 AI: "Would you like me to compare this with the previous quarter?"
 User: "Yes"
 → You must now perform that comparison, following the same 4-step process (retrieve schema, generate SQL, execute, answer).
-
 """
 
 agent = create_agent(llm, tools, system_prompt=system_prompt)
