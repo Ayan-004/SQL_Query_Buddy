@@ -1,16 +1,17 @@
 import os
 import uvicorn
+import re
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Tuple
+from typing import List, Any, Optional
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.utilities.sql_database import SQLDatabase
-from langchain_community.tools.sql_database.tool import QuerySQLDatabaseTool
-from langchain_core.tools import create_retriever_tool
+from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
+from langchain_classic.tools.retriever import create_retriever_tool
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.agents import create_agent
 
@@ -24,7 +25,7 @@ print("Initializig core components...")
 llm = ChatOpenAI(model='gpt-4o', temperature=0)
 embeddings = OpenAIEmbeddings()
 
-db = SQLDatabase.from_uri("sqlite:///Database/retail.db")
+db = SQLDatabase.from_uri("sqlite:///retail.db")
 
 try:
     vectorstore = FAISS.load_local(
@@ -45,74 +46,78 @@ print("Components initialized successfully.")
 schema_retriever_tool = create_retriever_tool(
     retriever,
     "schema_search",
-    "Use this tool to find relevent table and column information (schema) before generating a SQL query. Pass a natural language question as the query."
+    "Use this tool to find relevent table and column information (schema) in retail.db database before generating a SQL query. Pass a natural language question as the query."
 )
 
-sql_query_tool = QuerySQLDatabaseTool(db=db)
+sql_query_tool = QuerySQLDataBaseTool(db=db)
 
 tools = [schema_retriever_tool, sql_query_tool]
 
 system_prompt = """
-You are an expert data analyst AI named 'SQL Query Buddy'.
-Your goal is to help users get insights from a retail database.
-You MUST follow this 4-step process for every user question:
+You are 'SQL Query Buddy', an expert data analyst AI. Your goal is to help users get actionable insights from a retail database. You have to retrieve data from retail.db database, and DO NOT make up data on your own.
 
-1.  **Retrieve Schema:** Use the 'schema_search' tool. This is mandatory.
-    You must use this tool to get relevant table names, column descriptions, and join info.
+Your primary job is to answer the user's question by following the 4-Step Workflow. You must also obey the Error Handling and Formatting rules.
 
-2.  **Generate SQL:** Based ONLY on the retrieved schema context, generate an
-    accurate SQL query to answer the user's question.
+---
+### 4-STEP WORKFLOW
 
-3.  **Execute Query:** Use the 'QuerySQLDataBaseTool' to run the SQL query.
-    You will get back the raw results.
+You MUST follow this 4-step process for every user request:
 
-4.  **Answer the User:** Format your final response as a single, complete
-    message. Do NOT output the steps.
-    Your response MUST be structured using these exact 4 parts:
+1.  **Analyze Context & Retrieve Schema:**
+    * First, analyze the full `chat_history` to understand the complete conversational context.
+    * Then, use the `schema_search` tool to find the relevant tables, columns, and join keys for the user's specific question. This is mandatory.
 
-    **Explanation:**
-    [cite_start](Provide a beginner-friendly explanation of the SQL query [cite: 33])
-    
-    **SQL:**
-    ```sql
-    [cite_start](The generated SQL query [cite: 41])
-    ```
-    
-    **Raw Results:**
-    ```
-    [cite_start](The raw query results from the tool [cite: 42])
-    ```
-    
-    **AI-Driven Insight:**
-    (This is the most important part. Analyze the raw results and provide a
-    [cite_start]concise, human-like insight[cite: 26].
-    Do not just repeat the numbers. Interpret them.
-    For example: "Sales in California grew 15%" or
-    "Electronics is the dominant category, accounting for 40%/ of sales.")
+2.  **Generate SQL:**
+    * Based on the context and the retrieved schema, generate one single, accurate, and efficient SQL query.
+    * **CRITICAL:** The database is SQLite. You MUST use SQLite-compatible syntax (e.g., `strftime` for dates, `DATE('now')`).
 
-[cite_start]Remember: Maintain conversation history for follow-ups[cite: 37].
+3.  **Execute Query:**
+    * Use the `QuerySQLDataBaseTool` to run the SQL query.
 
-[Add exactly one line of space after the insight.]
+4.  **Format the Answer:**
+    * You MUST format your final response as a single, complete message structured with the **exact 4 parts** defined below. Do NOT output your thought process or the 4-step-process itself.
 
-Then, naturally continue with **one single follow-up question** that fits the insight context.  
-Do NOT include any title like “Suggested Follow-Up Questions”.  
-Write it as a conversational suggestion, e.g.:
-- "Would you like me to compare this with last month's data?"
-- "Should I break this down by region to see where growth is strongest?"
-- "Would you like to identify which products drove this trend?"
+---
+### ERROR & EMPTY RESULT HANDLING
 
-This follow-up must sound natural and flow directly after the insight, as if you're continuing the analysis.
+* **IF THE SQL QUERY FAILS:** Do NOT just say "I encountered an error."
+    1.  Provide the `Explanation`, `SQL` (with the error), and `Raw Results` (with the error message).
+    2.  For the `AI-Driven Insight`, explain the error in simple terms (e.g., "The query failed because the column 'name' is ambiguous; it exists in two tables.") and suggest a fix.
 
-If the user replies with an affirmation (e.g., "yes", "sure", "please do", "go ahead", "okay"), 
-you must automatically interpret it as approval to execute your **previous follow-up question** 
-and proceed as if the user explicitly asked that question.
+* **IF THE QUERY RETURNS 0 RESULTS:**
+    1.  Provide the `Explanation`, `SQL`, and `Raw Results` (e.g., "Query returned no results.")
+    2.  For the `AI-Driven Insight`, state that the query ran but found no data.
+    3.  Provide a likely hypothesis (e.g., "This means there were no sales for this category in the last 30 days.")
 
-Do NOT ask for clarification again.
+---
+### RESPONSE FORMAT (MANDATORY)
 
-Example:
-AI: "Would you like me to compare this with the previous quarter?"
-User: "Yes"
-→ You must now perform that comparison, following the same 4-step process (retrieve schema, generate SQL, execute, answer).
+You MUST structure your response with these 4 parts.
+
+**Explanation:**
+(Provide a beginner-friendly explanation of the SQL query)
+
+**SQL:**
+```sql
+(The generated SQL query)
+
+**Raw Results:**
+```
+(The raw query results from the tool)
+```
+
+AI-Driven Insight: 
+(This is your most important task. 
+Provide a concise, human-like insight based on the raw results. 
+Interpret the data, don't just repeat it. Identify trends, anomalies, or key takeaways.
+If the query fails or is empty, follow the Error Handling rules.)
+
+FOLLOW-UP QUESTION RULE
+After your AI-Driven Insight, add exactly one blank line.
+Then, naturally continue with one single follow-up question that fits the insight.
+Do NOT include any title like "Suggested Follow-Up."
+Example: "...This indicates a positive trend.
+Would you like me to break this down by product category?"
 """
 
 agent = create_agent(llm, tools, system_prompt=system_prompt)
@@ -132,14 +137,18 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     question: str
-    chat_history: List[Tuple[str, str]]
+    chat_history: Optional[List[Any]] = []
     
 class EnhanceRequest(BaseModel):
     prompt: str
     
 class ChatResponse(BaseModel):
     answer: str
-    chat_history: List[Tuple[str, str]]
+    chat_history: Optional[List[Any]] = []
+    
+AFFIRMATION = {
+    "yes", "sure", "please do", "go ahead", "okay", "yes please", "yep", "y", "ok"
+}
     
 @app.post("/enhance-prompt")
 async def enhance_prompt(request: EnhanceRequest):
@@ -189,6 +198,36 @@ async def enhance_prompt(request: EnhanceRequest):
 async def chat(request: ChatRequest):
     print(f"Request received: {request.question}")
     
+    user_question = request.question.strip().lower().rstrip(".").rstrip("!")
+    original_question = request.question
+    
+    if user_question in AFFIRMATION and request.chat_history:
+        try:
+            last_ai_answer = request.chat_history[-1][1]
+            
+            match = re.search(
+                r"(Would you like to .*?\?|Should I .*?\?)",
+                last_ai_answer,
+                re.IGNORECASE | re.DOTALL
+            )
+            
+            if match:
+                extracted_question = match.group(1)
+                
+                if extracted_question.lower().startswith("would you like to "):
+                    extracted_question = extracted_question[18:].strip("?")
+                elif extracted_question.lower().startswith("should i "):
+                    extracted_question = extracted_question[9:].strip("?")
+                    
+                print("---Affirmation detected!---")
+                print(f"Original question: '{original_question}'")
+                print(f"Extracted question: '{extracted_question}'")
+                
+                request.question = extracted_question
+        except Exception as e:
+            print(f"Error extracting follow-up: {e}")
+            pass
+    
     history_messages = []
     for item in request.chat_history:
         if isinstance(item, list) and len(item) == 2:
@@ -205,7 +244,8 @@ async def chat(request: ChatRequest):
         
         ai_answer = response["messages"][-1].content
         
-        updated_history = request.chat_history + [[request.question,  ai_answer]]
+        # updated_history = request.chat_history + [[request.question,  ai_answer]]
+        updated_history = (request.chat_history or []) + [[original_question, ai_answer]]
         
         return ChatResponse(answer=ai_answer, chat_history=updated_history)
     
