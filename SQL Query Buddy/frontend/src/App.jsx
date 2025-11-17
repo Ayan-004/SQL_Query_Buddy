@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import logo from './assets/logo.png'
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -115,10 +115,10 @@ function App() {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-message-circle-plus-icon lucide-message-circle-plus"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="lucide lucide-message-circle-plus-icon lucide-message-circle-plus"
           >
             <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
             <path d="M8 12h8" />
@@ -200,10 +200,10 @@ function App() {
               viewBox="0 0 24 24"
               fill="none"
               stroke="#ffffff"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide lucide-wand-sparkles-icon lucide-wand-sparkles"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-wand-sparkles-icon lucide-wand-sparkles"
             >
               <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72" />
               <path d="m14 7 3 3" />
@@ -250,10 +250,10 @@ function App() {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-arrow-up-icon lucide-arrow-up"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-arrow-up-icon lucide-arrow-up"
               >
                 <path d="m5 12 7-7 7 7" />
                 <path d="M12 19V5" />
