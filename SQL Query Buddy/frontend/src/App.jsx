@@ -159,7 +159,7 @@ function App() {
           ))}
         </div>
         {chatLoading && (
-          <div className="flex justify-start mt-4 w-full max-w-2xl">
+          <div className="flex justify-start mt-4 mb-5 w-full max-w-2xl">
             <div className="bg-neutral-800 text-white p-3 rounded-3xl max-w-lg text-left ml-0">
               <div className="flex space-x-1">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
