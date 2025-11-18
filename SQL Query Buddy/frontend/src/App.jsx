@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import logo from './assets/logo.png'
+import logo from "./assets/logo.png";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -17,7 +17,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [chatLoading, setChatLoading] = useState(false)
+  const [chatLoading, setChatLoading] = useState(false);
 
   const API_URL = "http://localhost:8000/chat";
 
@@ -103,10 +103,10 @@ function App() {
     <div className="flex flex-col min-h-screen bg-neutral-900 text-white">
       {/* {Header} */}
       <header className="sticky font-monotrust top-0 z-10 p-4 border-b border-neutral-800 bg-neutral-900/75 backdrop-blur-xl">
-      <div className="flex items-center gap-2">
-        <img src={logo} alt="logo image" className="w-9 h-9" />
-        <h1 className="text-2xl">SQL Query Buddy</h1>
-      </div>
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="logo image" className="w-9 h-9" />
+          <h1 className="text-2xl">SQL Query Buddy</h1>
+        </div>
 
         <p className="text-sm text-neutral-400 pt-1">
           Ask me anything about your retail database!
@@ -141,7 +141,9 @@ function App() {
         <div className="w-full max-w-2xl space-y-8">
           {messages.length === 0 && (
             <div className="text-white p-6 text-center">
-              <h2 className="text-2xl font-poppins mt-20">How can I help you explore your retail data today?</h2>
+              <h2 className="text-2xl font-poppins mt-20">
+                How can I help you explore your retail data today?
+              </h2>
             </div>
           )}
           {messages.map((msg, index) => (
@@ -277,22 +279,22 @@ function App() {
   );
 }
 
-  const CopyButton = ({ text }) => {
-    const [copied, setCopied] = useState(false);
+const CopyButton = ({ text }) => {
+  const [copied, setCopied] = useState(false);
 
-    const handlecopy = () => {
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    };
-    return (
-      <button
-        onClick={handlecopy}
-        className="absolute top-1.5 right-1.5 bg-neutral-800 hover:bg-neutral-700 text-xs text-white p-1.5 rounded transition-all duration-200 hover:cursor-pointer"
-        title="Copy SQL"
-      >
-        {copied ? (
-          <svg
+  const handlecopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handlecopy}
+      className="absolute top-1.5 right-1.5 bg-neutral-800 hover:bg-neutral-700 text-xs text-white p-1.5 rounded transition-all duration-200 hover:cursor-pointer"
+      title="Copy SQL"
+    >
+      {copied ? (
+        <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
           height="16"
@@ -308,8 +310,8 @@ function App() {
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
           <path d="m9 14 2 2 4-4" />
         </svg>
-        ) : (
-          <svg
+      ) : (
+        <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
           height="16"
@@ -324,42 +326,45 @@ function App() {
           <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
         </svg>
-        )}
-      </button>
-    );
+      )}
+    </button>
+  );
+};
+
+const AIMessage = ({ content }) => {
+  const extractChartData = (text) => {
+    const chartRegex = /\*\*Chart Data:\*\*\s*```json\s*([\s\S]*?)```/i;
+    const match = text.match(chartRegex);
+    if (match && match[1]) {
+      try {
+        return JSON.parse(match[1]);
+      } catch (e) {
+        console.error("Failed to parse chart JSON", e);
+        return null;
+      }
+    }
+    return null;
   };
 
-  const AIMessage = ({ content }) => {
-    const extractChartData = (text) => {
-      const chartRegex = /\*\*\Chart Data:\*\*\s*```json\n([\s\S]*?)\n```/;
-      const match = text.match(chartRegex);
-      if (match && match[1]){
-        try {
-          return JSON.parse(match[1])
-        } catch (e) {
-          console.error("Failed to parse chart JSON", e)
-          return null
-        }
-      }
-      return null
-    }
+  const chartData = extractChartData(content);
+  const cleanContent = content
+    .replace(/\*\*Chart Data:\*\*\s*```json[\s\S]*?```/, "")
+    .trim();
 
-    const chartData = extractChartData(content);
-    const cleanContent = content.replace(/\*\*Chart Data:\*\*\s*```json[\s\S]*?```/, "").trim()
+  let nameKey = "name";
+  let valueKey = "value";
 
-    let nameKey = "name";
-    let valueKey = "value"
+  if (chartData && chartData.length > 0) {
+    const firstItem = chartData[0];
+    const keys = Object.keys(firstItem);
 
-    if(chartData && chartData.length > 0) {
-      const firstItem = chartData[0]
-      const keys = Object.keys(firstItem)
+    nameKey = keys.find((key) => typeof firstItem[key] === "string") || keys[0];
 
-      nameKey = keys.find((key) => typeof firstItem[key] === "string") || keys[0];
-
-      valueKey = keys.find((key) => typeof firstItem[key] === "number") || keys[1]
-    }
-    return (
-      <div className="flex flex-col gap-4">
+    valueKey =
+      keys.find((key) => typeof firstItem[key] === "number") || keys[1];
+  }
+  return (
+    <div className="flex flex-col gap-4">
       <ReactMarkdown
         children={cleanContent}
         components={{
@@ -403,7 +408,9 @@ function App() {
             );
           },
           h2({ children }) {
-            return <strong className="text-lg text-blue-300">{children}</strong>;
+            return (
+              <strong className="text-lg text-blue-300">{children}</strong>
+            );
           },
           blockquote({ children }) {
             return (
@@ -418,29 +425,33 @@ function App() {
       {chartData && chartData.length > 0 && (
         <div className="w-full font-poppins h-96 bg-gray-800 rounded-lg p-4 mt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
-              <XAxis 
+            <BarChart data={chartData} margin={{ bottom: 50 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis
                 dataKey={nameKey}
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                tick={{ fill: "#9CA3AF", fontSize: 11 }}
                 tickLine={false}
                 angle={-45}
                 textAnchor="end"
                 height={80}
                 interval={0}
               />
-              <YAxis 
+              <YAxis
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                tick={{ fill: "#9CA3AF", fontSize: 12 }}
                 tickLine={false}
               />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1F2937', border: "none", borderRadius: "8px" }}
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1F2937",
+                  border: "none",
+                  borderRadius: "8px",
+                }}
                 itemStyle={{ color: "#fff" }}
                 cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}
               />
-              <Bar 
+              <Bar
                 dataKey={valueKey}
                 fill="#3B82F6"
                 radius={[4, 4, 0, 0]}
@@ -451,7 +462,7 @@ function App() {
         </div>
       )}
     </div>
-    );
-  };
+  );
+};
 
-  export default App;
+export default App;

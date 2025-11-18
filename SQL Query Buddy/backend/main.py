@@ -117,10 +117,11 @@ Provide a concise, human-like insight based on the raw results.
 Interpret the data, don't just repeat it. Identify trends, anomalies, or key takeaways.
 If the query fails or is empty, follow the Error Handling rules.)
 
-**Chart Data:**
+Chart Data
 (You MUST include this section if the query result is a list of 2 or more items.
 If the result is a single number, leave this blank.
 If the result is a list, you MUST output a JSON object here.
+
 Format:
 **Chart Data:**
 ```json
@@ -236,10 +237,6 @@ async def chat(request: ChatRequest):
                     extracted_question = extracted_question[18:].strip("?")
                 elif extracted_question.lower().startswith("should i "):
                     extracted_question = extracted_question[9:].strip("?")
-                    
-                print("---Affirmation detected!---")
-                print(f"Original question: '{original_question}'")
-                print(f"Extracted question: '{extracted_question}'")
                 
                 request.question = extracted_question
         except Exception as e:
@@ -271,14 +268,13 @@ async def chat(request: ChatRequest):
         if raw_match:
             raw_text = raw_match.group(1).strip()
             
-            if raw_text.startswith("[") and raw_text.endswith("]"):
-                try:
-                    parsed = eval(raw_text)
-                    if isinstance(parsed, list):
-                        formatted = "\n".join(str(row) for row in parsed)
-                        ai_answer = ai_answer.replace(raw_text, formatted)
-                except Exception:
-                    pass
+            try:
+                parsed = eval(raw_text)
+                if isinstance(parsed, list):
+                    pretty_list = "\n".join(f" {row}" for row in parsed)
+                    ai_answer = ai_answer.replace(raw_text, pretty_list)
+            except Exception:
+                pass
         
         updated_history = (request.chat_history or []) + [[original_question, ai_answer]]
         
