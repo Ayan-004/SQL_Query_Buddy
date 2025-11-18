@@ -3,6 +3,15 @@ import logo from './assets/logo.png'
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -131,7 +140,7 @@ function App() {
       <div className="flex flex-col font-inter items-center px-4 pt-6 pb-8 ">
         <div className="w-full max-w-2xl space-y-8">
           {messages.length === 0 && (
-            <div className="text-white p-6 rounded-3xl shadow-md text-center leading-relaxed">
+            <div className="text-white p-6 text-center">
               <h2 className="text-2xl font-poppins mt-20">How can I help you explore your retail data today?</h2>
             </div>
           )}
@@ -321,9 +330,38 @@ function App() {
   };
 
   const AIMessage = ({ content }) => {
+    const extractChartData = (text) => {
+      const chartRegex = /\*\*\Chart Data:\*\*\s*```json\n([\s\S]*?)\n```/;
+      const match = text.match(chartRegex);
+      if (match && match[1]){
+        try {
+          return JSON.parse(match[1])
+        } catch (e) {
+          console.error("Failed to parse chart JSON", e)
+          return null
+        }
+      }
+      return null
+    }
+
+    const chartData = extractChartData(content);
+    const cleanContent = content.replace(/\*\*Chart Data:\*\*\s*```json[\s\S]*?```/, "").trim()
+
+    let nameKey = "name";
+    let valueKey = "value"
+
+    if(chartData && chartData.length > 0) {
+      const firstItem = chartData[0]
+      const keys = Object.keys(firstItem)
+
+      nameKey = keys.find((key) => typeof firstItem[key] === "string") || keys[0];
+
+      valueKey = keys.find((key) => typeof firstItem[key] === "number") || keys[1]
+    }
     return (
+      <div className="flex flex-col gap-4">
       <ReactMarkdown
-        children={content.replace(/\r\n/g, "\n")}
+        children={cleanContent}
         components={{
           code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
@@ -376,6 +414,43 @@ function App() {
           },
         }}
       />
+
+      {chartData && chartData.length > 0 && (
+        <div className="w-full font-poppins h-96 bg-gray-800 rounded-lg p-4 mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151"/>
+              <XAxis 
+                dataKey={nameKey}
+                stroke="#9CA3AF"
+                tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                tickLine={false}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+              />
+              <YAxis 
+                stroke="#9CA3AF"
+                tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                tickLine={false}
+              />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#1F2937', border: "none", borderRadius: "8px" }}
+                itemStyle={{ color: "#fff" }}
+                cursor={{ fill: "rgba(255, 255, 255, 0.1)" }}
+              />
+              <Bar 
+                dataKey={valueKey}
+                fill="#3B82F6"
+                radius={[4, 4, 0, 0]}
+                animationDuration={500}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
     );
   };
 

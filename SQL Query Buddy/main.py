@@ -117,6 +117,19 @@ Provide a concise, human-like insight based on the raw results.
 Interpret the data, don't just repeat it. Identify trends, anomalies, or key takeaways.
 If the query fails or is empty, follow the Error Handling rules.)
 
+**Chart Data:**
+(You MUST include this section if the query result is a list of 2 or more items.
+If the result is a single number, leave this blank.
+If the result is a list, you MUST output a JSON object here.
+Format:
+**Chart Data:**
+```json
+[
+  {"name": "Label 1", "value": 100},
+  {"name": "Label 2", "value": 200}
+]
+)
+
 FOLLOW-UP QUESTION RULE
 After your AI-Driven Insight, add exactly one blank line.
 Then, naturally continue with one single follow-up question that fits the insight.
