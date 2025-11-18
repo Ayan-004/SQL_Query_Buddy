@@ -19,14 +19,14 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
 
-  const API_URL = "https://sql-query-buddy.onrender.com/chat";
+  const API_URL = "https://sql-query-buddy-1.onrender.com/chat";
 
   const handleEnhancePrompt = async () => {
     if (!input.trim()) return;
 
     setLoading(true);
     try {
-      const response = await fetch("https://sql-query-buddy.onrender.com/enhance-prompt", {
+      const response = await fetch("https://sql-query-buddy-1.onrender.com/enhance-prompt", {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({
