@@ -19,14 +19,15 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
 
-  const API_URL = "https://sql-query-buddy-1.onrender.com/chat";
+  // const API_URL = "https://sql-query-buddy-1.onrender.com/chat";
+  const API_URL = "http://localhost:8000/chat"
 
   const handleEnhancePrompt = async () => {
     if (!input.trim()) return;
 
     setLoading(true);
     try {
-      const response = await fetch("https://sql-query-buddy-1.onrender.com/enhance-prompt", {
+      const response = await fetch("http://localhost:8000/enhance-prompt", {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify({
@@ -102,7 +103,7 @@ function App() {
     // {Main Component}
     <div className="flex flex-col min-h-screen bg-neutral-900 text-white">
       {/* {Header} */}
-      <header className="sticky font-monotrust top-0 z-10 p-4 border-b border-neutral-800 bg-neutral-900/75 backdrop-blur-xl">
+      <header className="sticky font-monotrust top-0 z-10 p-3 sm:p-4 border-b border-neutral-800 bg-neutral-900/75 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <img src={logo} alt="logo image" className="w-9 h-9" />
           <h1 className="text-2xl">SQL Query Buddy</h1>
@@ -138,11 +139,11 @@ function App() {
 
       {/* {Chat Window} */}
       <div className="flex flex-col font-inter items-center px-4 pt-6 pb-8 ">
-        <div className="w-full max-w-2xl space-y-8">
+        <div className="w-full max-w-2xl space-y-8 px-2 sm:px-4">
           {messages.length === 0 && (
             <div className="text-white p-6 text-center">
               <h2 className="text-2xl font-poppins mt-20">
-                How can I help you explore your retail data today?
+                How can I help you today?
               </h2>
             </div>
           )}
@@ -154,7 +155,7 @@ function App() {
               }`}
             >
               <div
-                className={`p-3 rounded-3xl max-w-2xl ${
+                className={`p-3 rounded-3xl max-w-full sm:max-w-2xl ${
                   msg.sender === "user"
                     ? "bg-blue-700 text-white"
                     : "text-white text-left"
@@ -187,7 +188,7 @@ function App() {
         className="sticky bottom-6 flex justify-center w-full px-4 z-10"
         onSubmit={handleSubmit}
       >
-        <div className="flex items-center w-full max-w-3xl sm:max-w-3xl bg-neutral-800/80 backdrop-blur-xl border border-neutral-700 rounded-full px-2 py-2 transition-all duration-300 focus-within:scale-[1.02] focus-within:shadow-[0_0_15px_rgba(255,255,255,0.15)]">
+        <div className="flex items-center w-full max-w-full sm:max-w-3xl bg-neutral-800/80 backdrop-blur-xl border border-neutral-700 rounded-full px-2 py-2 transition-all duration-300 focus-within:scale-[1.02] focus-within:shadow-[0_0_15px_rgba(255,255,255,0.15)]">
           <input
             type="text"
             value={input}
@@ -396,7 +397,7 @@ const AIMessage = ({ content }) => {
             if (className === "language-") {
               return (
                 <pre
-                  className="bg-gray-900 p-2 rounded-md overflow-x-auto text-sm"
+                  className="bg-gray-900 p-2 rounded-md text-sm"
                   {...props}
                 >
                   <code>{children}</code>
@@ -423,18 +424,18 @@ const AIMessage = ({ content }) => {
       />
 
       {chartData && chartData.length > 0 && (
-        <div className="w-full font-poppins h-96 bg-gray-800 rounded-lg p-4 mt-2">
+        <div className="w-full font-poppins h-[300px] sm:h-[400px] bg-gray-800 rounded-lg sm:p-4 mt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ bottom: 50 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 10, left: 10, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis
                 dataKey={nameKey}
                 stroke="#9CA3AF"
                 tick={{ fill: "#9CA3AF", fontSize: 11 }}
                 tickLine={false}
-                angle={-45}
+                angle={-30}
                 textAnchor="end"
-                height={80}
+                height={50}
                 interval={0}
               />
               <YAxis
@@ -455,7 +456,7 @@ const AIMessage = ({ content }) => {
                 dataKey={valueKey}
                 fill="#3B82F6"
                 radius={[4, 4, 0, 0]}
-                animationDuration={500}
+                animationDuration={1500}
               />
             </BarChart>
           </ResponsiveContainer>
