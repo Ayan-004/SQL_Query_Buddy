@@ -148,7 +148,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://sqlbuddy.netlify.app",
+        "http://localhost:5173"
+                   ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -286,6 +289,10 @@ async def chat(request: ChatRequest):
             answer=f"Sorry, an error occurred while processing your request: {e}",
             chat_history=request.chat_history
         )
+        
+@app.get('/ping')
+def ping():
+    return {"status": "ok"}
         
 @app.get("/")
 def root():
